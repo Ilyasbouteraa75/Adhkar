@@ -25,11 +25,9 @@ class OverlayService : Service() {
     private var overlayView: View? = null
     private lateinit var wm: WindowManager
 
-    // كل كم ثانية تطلع الرسالة
-    private val intervalMs = 5 * 60 * 1000L
-    // مدة بقاء الرسالة
-    private val showMs = 5000L
-    private val maxCount = 1000
+    private fun prefs() = getSharedPreferences("adhkar", MODE_PRIVATE)
+    private fun intervalMs() = prefs().getInt("interval", 5) * 60 * 1000L
+    private fun showMs() = prefs().getInt("duration", 5) * 1000L
 
     private val tick = object : Runnable {
         override fun run() {
@@ -37,7 +35,7 @@ class OverlayService : Service() {
             if (pm.isInteractive) {
                 showOverlay()
             }
-            handler.postDelayed(this, intervalMs)
+            handler.postDelayed(this, intervalMs())
         }
     }
 
@@ -45,7 +43,7 @@ class OverlayService : Service() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         startAsForeground()
-        handler.postDelayed(tick, intervalMs)
+        handler.postDelayed(tick, intervalMs())
     }
 
     private fun startAsForeground() {
@@ -67,17 +65,19 @@ class OverlayService : Service() {
     }
 
     private fun showOverlay() {
-        val prefs = getSharedPreferences("adhkar", MODE_PRIVATE)
-        val count = prefs.getInt("count", 0)
-        if (count >= maxCount) return
+        val p = prefs()
+        val count = p.getInt("count", 0)
+        val max = p.getInt("max", 1000)
+        if (max > 0 && count >= max) return
 
         val newCount = count + 1
-        prefs.edit().putInt("count", newCount).apply()
+        p.edit().putInt("count", newCount).apply()
 
         removeOverlay()
 
+        val dhikr = p.getString("text", "أستغفر الله وأتوب إليه") ?: ""
         val tv = TextView(this).apply {
-            text = "أستغفر الله وأتوب إليه  ($newCount)"
+            text = if (p.getBoolean("showCount", true)) "$dhikr  ($newCount)" else dhikr
             setTextColor(Color.parseColor("#1B1B1B"))
             textSize = 16f
             setPadding(48, 28, 48, 28)
@@ -104,7 +104,7 @@ class OverlayService : Service() {
         try {
             wm.addView(tv, params)
             overlayView = tv
-            handler.postDelayed({ removeOverlay() }, showMs)
+            handler.postDelayed({ removeOverlay() }, showMs())
         } catch (e: Exception) {
             e.printStackTrace()
         }
