@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -50,9 +51,14 @@ class MainActivity : Activity() {
         }
 
         val etMax = EditText(this).apply {
-            hint = "العدد الأقصى"
+            hint = "العدد الأقصى (0 = بلا نهاية)"
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(prefs.getInt("max", 1000).toString())
+        }
+
+        val cbCount = CheckBox(this).apply {
+            text = "إظهار الرقم"
+            isChecked = prefs.getBoolean("showCount", true)
         }
 
         fun saveSettings() {
@@ -61,6 +67,7 @@ class MainActivity : Activity() {
                 .putInt("interval", (etInterval.text.toString().toIntOrNull() ?: 5).coerceAtLeast(1))
                 .putInt("duration", (etDuration.text.toString().toIntOrNull() ?: 5).coerceAtLeast(1))
                 .putInt("max", etMax.text.toString().toIntOrNull() ?: 1000)
+                .putBoolean("showCount", cbCount.isChecked)
                 .apply()
         }
 
@@ -117,6 +124,7 @@ class MainActivity : Activity() {
         layout.addView(etInterval)
         layout.addView(etDuration)
         layout.addView(etMax)
+        layout.addView(cbCount)
         layout.addView(btnPermission)
         layout.addView(btnStart)
         layout.addView(btnStop)
